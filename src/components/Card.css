@@ -1,0 +1,25 @@
+.lift-enter {
+  transform: translateY(0);
+}
+
+.lift-enter-active {
+  transform: translateY(-20px);
+  transition: all 200ms;
+}
+
+.lift-enter-done {
+  transform: translateY(-20px);
+}
+
+.lift-exit {
+  transform: translateY(-20px);
+}
+
+.lift-exit-active {
+  transform: translateY(0px);
+  transition: all 200ms;
+}
+
+.lift-exit-done {
+  transform: translateY(0);
+}

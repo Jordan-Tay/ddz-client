@@ -1,24 +1,28 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import { socket, SocketContext } from './context/socket';
+import { Game, Start } from './screens';
+import { Backdrop, createTheme, responsiveFontSizes, ThemeProvider, useMediaQuery, useTheme } from '@mui/material';
 
-function App() {
+let theme = createTheme({
+  typography: {
+    'fontFamily': 'Montserrat'
+  },
+})
+theme = responsiveFontSizes(theme);
+
+const App = () => {
+  const [roomId, setRoomId] = useState(null);
+  const [userId, setUserId] = useState(null);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <SocketContext.Provider value={socket}>
+      <ThemeProvider theme={theme}>
+        <div className="App">
+          {!roomId && <Start setRoomId={setRoomId} setUserId={setUserId} />}
+          {roomId && <Game roomId={roomId} userId={userId} />}
+        </div>
+      </ThemeProvider>
+    </SocketContext.Provider>
   );
 }
 
