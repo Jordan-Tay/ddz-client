@@ -13,13 +13,14 @@ theme = responsiveFontSizes(theme);
 const App = () => {
   const [roomId, setRoomId] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [name, setName] = useState('');
 
   return (
     <SocketContext.Provider value={socket}>
       <ThemeProvider theme={theme}>
         <div className="App">
-          {!roomId && <Start setRoomId={setRoomId} setUserId={setUserId} />}
-          {roomId && <Game roomId={roomId} userId={userId} />}
+          {!roomId && <Start name={name} setName={setName} setRoomId={setRoomId} setUserId={setUserId} />}
+          {roomId && <Game name={name} roomId={roomId} userId={userId} />}
         </div>
       </ThemeProvider>
     </SocketContext.Provider>

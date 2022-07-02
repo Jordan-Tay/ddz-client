@@ -68,7 +68,7 @@ export const combination = selected => {
   } else if (isSequencePair(primitives)) {
     return formatSequencePair(formatArgs);
   } else if (isSequenceTriplet(primitives)) {
-    return formatSequenceTriple(formatArgs);
+    return formatSequenceTriplet(formatArgs);
   } else if (isSequenceTripletSingle(primitives)) {
     return formatSequenceTripleSingle(formatArgs);
   } else if (isSequenceTripletPair(primitives)) {
@@ -198,7 +198,7 @@ const isSequenceTriplet = primitives => {
   return Object.keys(primitives).length === 1 && primitives[3] && primitives[3].length >= 2 && isSequence(primitives[3]) && Math.max(...primitives[3]) < 15;
 };
 
-const formatSequenceTriple = ({ selected, rankEncoded, rankDecoded, primitives }) => {
+const formatSequenceTriplet = ({ selected, rankEncoded, rankDecoded, primitives }) => {
   const ranks = primitives[3].sort();
   return {
     combi: 'sequence-triplet',
@@ -212,7 +212,7 @@ const isSequenceTripletSingle = primitives => {
 };
 
 const formatSequenceTripleSingle = (args) => {
-  const { play, repr } = formatSequenceTriple(args);
+  const { play, repr } = formatSequenceTriplet(args);
   return {
     combi: 'sequence-triplet-single',
     play: [...play, ...formatSequenceSingle(args).play],
@@ -225,7 +225,7 @@ const isSequenceTripletPair = primitives => {
 };
 
 const formatSequenceTriplePair = (args) => {
-  const { play, repr } = formatSequenceTriple(args);
+  const { play, repr } = formatSequenceTriplet(args);
   return {
     combi: 'sequence-triplet-pair',
     play: [...play, ...formatSequencePair(args).play],

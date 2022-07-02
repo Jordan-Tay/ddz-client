@@ -14,7 +14,7 @@ const chunk = Array.from(Array(54).keys()).map(i => i + 1).sort(() => 0.5 - Math
   return ra - rb === 0 ? sb - sa : ra - rb;
 });
 
-export const Game = ({ roomId, userId }) => {
+export const Game = ({ name, roomId, userId }) => {
   const [hand, setHand] = useState([]);
   const [rightHand, setRightHand] = useState([]);
   const [leftHand, setLeftHand] = useState([]);
@@ -24,12 +24,18 @@ export const Game = ({ roomId, userId }) => {
   const [lastPlayed, setLastPlayed] = useState(null);
   const [message, setMessage] = useState('Waiting...');
   const [end, setEnd] = useState(false);
+  const [rightPlayer, setRightPlayer] = useState('');
+  const [leftPlayer, setLeftPlayer] = useState('');
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   const socket = useContext(SocketContext);
 
   useEffect(() => {
+    socket.on('players', (players) => {
+      setRightPlayer(players[(userId + 1) % 3] || '');
+      setLeftPlayer(players[(userId + 2) % 3] || '');
+    });
     socket.on('start-game', (hands) => {
       setHand(sortEncoded(hands[userId]));
       setRightHand(sortEncoded(hands[(userId + 1) % 3]));
@@ -49,6 +55,7 @@ export const Game = ({ roomId, userId }) => {
       }
     });
     return () => {
+      socket.off('players');
       socket.off('start-game');
       socket.off('turn');
       socket.off('win');
@@ -120,7 +127,10 @@ export const Game = ({ roomId, userId }) => {
     <div>
       <Snackbar autoHideDuration={2000} open={snackbarOpen} onClose={() => setSnackbarOpen(false)} message="Room ID copied to clipboard" />
       <div style={{ height: '60vh', display: 'flex' }}>
-        <div style={{ width: '20%', height: '100%' }}>
+        <div style={{ width: '20%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', boxSizing: 'border-box' }}>
+          <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
+            {leftPlayer}
+          </div>
           <CardStack size='s'>
             {leftHand.map(id => <Card key={id} id={id} back />)}
           </CardStack>
@@ -154,7 +164,10 @@ export const Game = ({ roomId, userId }) => {
             {lastPlayed && lastPlayed.play.map(id => <Card key={id} id={id} />)}
           </CardStack>
         </div>
-        <div style={{ width: '20%', height: '100%' }}>
+        <div style={{ width: '20%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', boxSizing: 'border-box' }}>
+          <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
+            {rightPlayer}
+          </div>
           <CardStack size='s'>
             {rightHand.map(id => <Card key={id} id={id} back />)}
           </CardStack>
@@ -162,6 +175,9 @@ export const Game = ({ roomId, userId }) => {
       </div>
       <div style={{ height: '40vh', display: 'flex', borderTop: '1px solid', boxSizing: 'border-box' }}>
         <div style={{ width: '80%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 40px', borderRight: '1px solid' }}>
+          <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
+            {name}
+          </div>
           {turn !== null && <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
             <Chip label={`${turn}'s move`} color={turn === userId ? 'success' : 'warning'} />
           </div>}

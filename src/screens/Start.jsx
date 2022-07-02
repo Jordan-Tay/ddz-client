@@ -8,7 +8,7 @@ const Alert = React.forwardRef(function Alert(props, ref) {
   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
 });
 
-export const Start = ({ setUserId, setRoomId }) => {
+export const Start = ({ name, setName, setUserId, setRoomId }) => {
   const [showRoomIdInput, setShowRoomIdInput] = useState(false);
   const [tryRoomId, setTryRoomId] = useState('');
   const [roomNotFound, setRoomNotFound] = useState(false);
@@ -16,11 +16,11 @@ export const Start = ({ setUserId, setRoomId }) => {
   const socket = useContext(SocketContext);
 
   const handleCreateRoom = () => {
-    socket.emit('create-room');
+    socket.emit('create-room', name);
   }
 
   const handleJoinRoom = () => {
-    socket.emit('join-room', tryRoomId);
+    socket.emit('join-room', { name, roomId: tryRoomId });
   }
 
   const handleJoiningRoom = useCallback(({ userId, roomId }) => {
@@ -50,6 +50,20 @@ export const Start = ({ setUserId, setRoomId }) => {
         <Alert severity="warning">The room is full</Alert>
       </Snackbar>
       <div style={{ width: '400px', height: '300px', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+        <input style={{
+            border: '1px solid grey',
+            borderRadius: '8px',
+            padding: '10px',
+            textAlign: 'center',
+            fontSize: '20px',
+            width: '100%',
+            boxSizing: 'border-box',
+            margin: '10px'
+          }} 
+          placeholder='Name'
+          onChange={(e) => {
+            setName(e.target.value);
+          }} />
         {!showRoomIdInput && <Button label='Create Room' onClick={handleCreateRoom} />}
         {showRoomIdInput && <input style={{
             border: '1px solid grey',
@@ -72,8 +86,6 @@ export const Start = ({ setUserId, setRoomId }) => {
             handleJoinRoom();
           }
         }} />
-        {/* {roomNotFound && <p style={{ color: 'red' }}>Room ID was not found</p>}
-        {roomFull && <p style={{ color: 'red' }}>The room is full</p>} */}
       </div>
     </div>
   );
