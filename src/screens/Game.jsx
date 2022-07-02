@@ -76,7 +76,7 @@ export const Game = ({ name, roomId, userId }) => {
   } else if (lastPlayed === null) {
     legal = true;
   } else if (lastPlayed.combi === 'rocket') {
-    legal = false;
+    legal = true;
   } else if (lastPlayed.combi === 'bomb') {
     legal = selectedData.combi === 'rocket' || (selectedData.combi === 'bomb' || selectedData.repr > lastPlayed.repr);
   } else {
