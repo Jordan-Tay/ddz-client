@@ -26,6 +26,7 @@ export const Game = ({ name, roomId, userId }) => {
   const [end, setEnd] = useState(false);
   const [rightPlayer, setRightPlayer] = useState('');
   const [leftPlayer, setLeftPlayer] = useState('');
+  const [turnName, setTurnName] = useState('');
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
@@ -36,13 +37,12 @@ export const Game = ({ name, roomId, userId }) => {
       setRightPlayer(players[(userId + 1) % 3] || '');
       setLeftPlayer(players[(userId + 2) % 3] || '');
     });
-    socket.on('start-game', (hands) => {
+    socket.on('turn', ({ player, playerName, hands, lastPlayedBy, lastPlayed }) => {
+      setTurn(player);
+      setTurnName(playerName);
       setHand(sortEncoded(hands[userId]));
       setRightHand(sortEncoded(hands[(userId + 1) % 3]));
       setLeftHand(sortEncoded(hands[(userId + 2) % 3]));
-    });
-    socket.on('turn', ({ player, lastPlayedBy, lastPlayed }) => {
-      setTurn(player);
       setLastPlayedBy(lastPlayedBy);
       setLastPlayed(lastPlayed);
     });
@@ -56,18 +56,10 @@ export const Game = ({ name, roomId, userId }) => {
     });
     return () => {
       socket.off('players');
-      socket.off('start-game');
       socket.off('turn');
       socket.off('win');
     }
   }, [socket, userId]);
-
-  useEffect(() => {
-    let selectedData = combination(selected);
-    if (selectedData) {
-      console.log(selectedData.play);
-    }
-  }, [selected]);
 
   const selectedData = combination(selected);
   let legal;
@@ -76,11 +68,11 @@ export const Game = ({ name, roomId, userId }) => {
   } else if (lastPlayed === null) {
     legal = true;
   } else if (lastPlayed.combi === 'rocket') {
-    legal = true;
+    legal = false;
   } else if (lastPlayed.combi === 'bomb') {
     legal = selectedData.combi === 'rocket' || (selectedData.combi === 'bomb' || selectedData.repr > lastPlayed.repr);
   } else {
-    legal = selectedData.combi === 'bomb' || (selectedData.combi === lastPlayed.combi && selectedData.repr > lastPlayed.repr);
+    legal = selectedData.combi === 'rocket' || selectedData.combi === 'bomb' || (selectedData.combi === lastPlayed.combi && selectedData.repr > lastPlayed.repr);
   }
 
   const handleClickCard = (id) => {
@@ -91,36 +83,49 @@ export const Game = ({ name, roomId, userId }) => {
     }
   };
 
-  const handlePlay = () => {
-    const newHand = hand.filter(id => !selected.includes(id));
-    setHand(newHand);
-    setSelected([]);
-    if (newHand.length === 0) {
-      socket.emit('win', {
-        roomId,
-        userId
-      })
-    } else {
+  const handleTopButton = () => {
+    if (!end) {
+      const newHand = hand.filter(id => !selected.includes(id));
+      setHand(newHand);
+      setSelected([]);
       socket.emit('play', {
         roomId,
         turn: {
           player: (userId + 1) % 3,
+          hands: {
+            [userId]: newHand,
+            [(userId + 1) % 3]: rightHand,
+            [(userId + 2) % 3]: leftHand
+          },
           lastPlayedBy: userId,
           lastPlayed: selectedData
         }
       });
+      if (newHand.length === 0) {
+        socket.emit('win', {
+          roomId,
+          userId
+        })
+      }
     }
   };
 
-  const handlePass = () => {
-    socket.emit('play', {
-      roomId,
-      turn: {
-        player: (userId + 1) % 3,
-        lastPlayedBy,
-        lastPlayed
-      }
-    });
+  const handleBottomButton = () => {
+    if (!end) {
+      socket.emit('play', {
+        roomId,
+        turn: {
+          player: (userId + 1) % 3,
+          hands: {
+            [userId]: hand,
+            [(userId + 1) % 3]: rightHand,
+            [(userId + 2) % 3]: leftHand
+          },
+          lastPlayedBy,
+          lastPlayed
+        }
+      });
+    }
   }
 
   return (
@@ -136,7 +141,7 @@ export const Game = ({ name, roomId, userId }) => {
           </CardStack>
         </div>
         <div style={{ width: '60%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 40px', borderLeft: '1px solid', borderRight: '1px solid', boxSizing: 'border-box', flexDirection: 'column' }}>
-          <div style={{  
+          <div style={{
             position: 'absolute',
             top: '10px',
             border: '1px solid grey',
@@ -179,7 +184,7 @@ export const Game = ({ name, roomId, userId }) => {
             {name}
           </div>
           {turn !== null && <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
-            <Chip label={`${turn}'s move`} color={turn === userId ? 'success' : 'warning'} />
+            <Chip label={`${turnName}'s move`} color={turn === userId ? 'success' : 'warning'} />
           </div>}
           {hand.length === 0 || end
             ? <>{message}</>
@@ -188,8 +193,8 @@ export const Game = ({ name, roomId, userId }) => {
             </CardStack>}
         </div>
         <div style={{ width: '20%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', padding: '0 40px' }}>
-          <Button label={end ? 'Rematch' : 'Play'} onClick={handlePlay} disabled={turn !== userId || !legal} />
-          <Button label={end ? 'Home' : 'Pass'} onClick={handlePass} disabled={turn !== userId || lastPlayed === null} />
+          <Button label={end ? 'Rematch' : 'Play'} onClick={handleTopButton} disabled={!end && (turn !== userId || !legal)} />
+          <Button label={end ? 'Home' : 'Pass'} onClick={handleBottomButton} disabled={!end && (turn !== userId || lastPlayed === null)} />
         </div>
       </div>
     </div>

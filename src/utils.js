@@ -173,7 +173,8 @@ const isSequenceSingle = primitives => {
 };
 
 const formatSequenceSingle = ({ selected, rankEncoded, rankDecoded, primitives }) => {
-  const ranks = primitives[1].sort()
+  const ranks = primitives[1].sort();
+  console.log('ranks', ranks);
   return {
     combi: 'sequence-single',
     play: ranks.flatMap(rank => rankEncoded[rank]),
