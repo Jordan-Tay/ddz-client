@@ -6,7 +6,7 @@ import CardStack from '../components/CardStack';
 import { combination, decodeCard, sortEncoded } from '../utils';
 import { SocketContext } from '../context/socket';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { Chip, Divider, IconButton, Snackbar, Tooltip } from '@mui/material';
+import { Chip, Divider, FormControlLabel, IconButton, Snackbar, Switch, Tooltip } from '@mui/material';
 
 const chunk = Array.from(Array(54).keys()).map(i => i + 1).sort(() => 0.5 - Math.random()).slice(0, 17).sort((id_a, id_b) => {
   const { rank: ra, suit: sa } = decodeCard(id_a);
@@ -30,6 +30,11 @@ export const Game = ({ name, roomId, userId }) => {
 
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
+  const [live, setLive] = useState(false);
+  const [preview, setPreview] = useState([]);
+  const [rightPreview, setRightPreview] = useState([]);
+  const [leftPreview, setLeftPreview] = useState([]);
+
   const socket = useContext(SocketContext);
 
   useEffect(() => {
@@ -37,6 +42,15 @@ export const Game = ({ name, roomId, userId }) => {
       setRightPlayer(players[(userId + 1) % 3] || '');
       setLeftPlayer(players[(userId + 2) % 3] || '');
     });
+    socket.on('preview', ({ player, preview }) => {
+      if (userId === player) {
+        setPreview(preview);
+      } else if ((userId + 1) % 3 === player) {
+        setRightPreview(preview);
+      } else {
+        setLeftPreview(preview);
+      }
+    })
     socket.on('turn', ({ player, playerName, hands, lastPlayedBy, lastPlayed }) => {
       setTurn(player);
       setTurnName(playerName);
@@ -75,12 +89,27 @@ export const Game = ({ name, roomId, userId }) => {
     legal = selectedData.combi === 'rocket' || selectedData.combi === 'bomb' || (selectedData.combi === lastPlayed.combi && selectedData.repr > lastPlayed.repr);
   }
 
-  const handleClickCard = (id) => {
-    if (selected.includes(id)) {
-      setSelected(selected.filter(s => s !== id));
-    } else {
-      setSelected([...selected, id]);
+  const handleLive = () => {
+    if (live) {
+      setLive(!live);
+      socket.emit('live', { roomId, userId, preview: [] });
+      return;
     }
+    setLive(!live);
+    socket.emit('live', { roomId, userId, preview: sortEncoded(selected) });
+  }
+
+  const handleClickCard = (id) => {
+    let newSelected = selected;
+    if (selected.includes(id)) {
+      newSelected = selected.filter(s => s !== id);
+    } else {
+      newSelected = [...selected, id];
+    }
+    if (live) {
+      socket.emit('live', { roomId, userId, preview: sortEncoded(newSelected) });
+    }
+    setSelected(newSelected);
   };
 
   const handleTopButton = () => {
@@ -88,6 +117,7 @@ export const Game = ({ name, roomId, userId }) => {
       const newHand = hand.filter(id => !selected.includes(id));
       setHand(newHand);
       setSelected([]);
+      socket.emit('live', { roomId, userId, preview: [] })
       socket.emit('play', {
         roomId,
         turn: {
@@ -132,15 +162,20 @@ export const Game = ({ name, roomId, userId }) => {
     <div>
       <Snackbar autoHideDuration={2000} open={snackbarOpen} onClose={() => setSnackbarOpen(false)} message="Room ID copied to clipboard" />
       <div style={{ height: '60vh', display: 'flex' }}>
-        <div style={{ width: '20%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', boxSizing: 'border-box' }}>
+        <div style={{ width: '20%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', boxSizing: 'border-box' }}>
           <div style={{ position: 'absolute', top: '10px', left: '10px' }}>
             {leftPlayer}
           </div>
           <CardStack size='s'>
             {leftHand.map(id => <Card key={id} id={id} back />)}
           </CardStack>
+          <div style={{ position: 'absolute', bottom: '30px' }}>
+            <CardStack size='xs'>
+                {leftPreview.map(id => <Card key={id} id={id} />)}
+            </CardStack>
+          </div>
         </div>
-        <div style={{ width: '60%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 40px', borderLeft: '1px solid', borderRight: '1px solid', boxSizing: 'border-box', flexDirection: 'column' }}>
+        <div style={{ width: '60%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '0 40px', borderLeft: '1px solid', borderRight: '1px solid', boxSizing: 'border-box', flexDirection: 'column' }}>
           <div style={{
             position: 'absolute',
             top: '10px',
@@ -168,14 +203,24 @@ export const Game = ({ name, roomId, userId }) => {
           <CardStack size='l'>
             {lastPlayed && lastPlayed.play.map(id => <Card key={id} id={id} />)}
           </CardStack>
+          <div style={{ position: 'absolute', bottom: '30px' }}>
+            <CardStack size='xs'>
+                {preview.map(id => <Card key={id} id={id} />)}
+            </CardStack>
+          </div>
         </div>
-        <div style={{ width: '20%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', boxSizing: 'border-box' }}>
+        <div style={{ width: '20%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', boxSizing: 'border-box' }}>
           <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
             {rightPlayer}
           </div>
           <CardStack size='s'>
             {rightHand.map(id => <Card key={id} id={id} back />)}
           </CardStack>
+          <div style={{ position: 'absolute', bottom: '30px' }}>
+            <CardStack size='xs'>
+                {rightPreview.map(id => <Card key={id} id={id} />)}
+            </CardStack>
+          </div>
         </div>
       </div>
       <div style={{ height: '40vh', display: 'flex', borderTop: '1px solid', boxSizing: 'border-box' }}>
@@ -192,7 +237,10 @@ export const Game = ({ name, roomId, userId }) => {
               {hand.map(id => <Card key={id} id={id} onClick={() => handleClickCard(id)} />)}
             </CardStack>}
         </div>
-        <div style={{ width: '20%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', padding: '0 40px' }}>
+        <div style={{ width: '20%', height: '100%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column', padding: '0 40px' }}>
+          {!end && <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
+            <FormControlLabel label='Troll' control={<Switch checked={live} onChange={handleLive} />} />
+          </div>}
           <Button label={end ? 'Rematch' : 'Play'} onClick={handleTopButton} disabled={!end && (turn !== userId || !legal)} />
           <Button label={end ? 'Home' : 'Pass'} onClick={handleBottomButton} disabled={!end && (turn !== userId || lastPlayed === null)} />
         </div>

@@ -43,7 +43,7 @@ export const Card = ({ rank, suit, back, id, style, size, onClick }) => {
         onClick();
         setSelected(!selected);
       }}>
-        <img style={{ width: size === 's' ? '100px' : size === 'm' ? '150px' : '180px', display: 'block' }} src={images[image]} alt={image} />
+        <img style={{ width: size === 'xs' ? '40px' : size === 's' ? '100px' : size === 'm' ? '150px' : '180px', display: 'block' }} src={images[image]} alt={image} />
       </div>
     </CSSTransition>
   );
@@ -63,7 +63,7 @@ Card.propTypes = {
   id: PropTypes.number,
   back: PropTypes.bool,
   style: PropTypes.object,
-  size: PropTypes.oneOf(['s', 'm', 'l']),
+  size: PropTypes.oneOf(['xs', 's', 'm', 'l']),
   onClick: PropTypes.func
 };
 
